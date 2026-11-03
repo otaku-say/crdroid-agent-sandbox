@@ -41,6 +41,7 @@ jobs:
             curl -L -o base.zip "${{ inputs.base_rom_url }}"
           else
             gh release download base-rom --pattern 'crDroid*.zip' --dir . --clobber
+            mv crDroid*.zip base.zip
           fi
           ls -lh base.zip
 
