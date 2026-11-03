@@ -61,8 +61,10 @@ def main(INPUT_IMAGE, OUTDIR='.', VERSION=None, PREFIX='system'):
     # Get sparse image
     image = sparse_img.SparseImage(INPUT_IMAGE, tempfile.mkstemp()[1], '0')
 
-    # Generate output files
-    b = blockimgdiff.BlockImageDiff(image, None, VERSION)
+    # Generate output files.
+    # 新版 blockimgdiff 从 common.OPTIONS.cache_size 读缓存大小，不设会 assert。
+    common.OPTIONS.cache_size = 4096 * 1024 * 1024
+    b = blockimgdiff.BlockImageDiff(image, None, version=VERSION)
     b.Compute(OUTDIR)
 
     print('Done! Output files: %s' % os.path.dirname(OUTDIR))
