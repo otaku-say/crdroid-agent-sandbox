@@ -1,0 +1,4 @@
+# 复制为 location.conf；MODE=auto 时由出口 IP 自动同步，manual 时固定坐标
+MODE=auto
+LATITUDE=34.052229
+LONGITUDE=-118.243682

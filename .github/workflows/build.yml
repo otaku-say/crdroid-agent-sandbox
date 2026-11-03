@@ -1,0 +1,86 @@
+name: Build Agent Sandbox Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_rom_url:
+        description: '原始 crDroid zip 的 URL（留空则从 Release 的 base-rom tag 取）'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            brotli zip unzip python3 python3-pip \
+            android-sdk-libsparse-utils imagemagick
+          # img2simg 由 android-sdk-libsparse-utils 提供
+          which img2simg || echo "warning: img2simg missing"
+
+      - name: Download base ROM
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          if [ -n "${{ inputs.base_rom_url }}" ]; then
+            curl -L -o base.zip "${{ inputs.base_rom_url }}"
+          else
+            gh release download base-rom --pattern 'crDroid*.zip' --dir . --clobber
+          fi
+          ls -lh base.zip
+
+      - name: Download TWRP
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh release download base-rom --pattern 'TWRP*.img' --dir . --clobber
+          ls -lh TWRP*.img
+
+      - name: Build firmware
+        run: |
+          set -e
+          TWRP=$(ls TWRP*.img | head -1)
+          mkdir -p out
+          sudo bash scripts/build.sh base.zip "$TWRP" out/crdroid-agent-cepheus.zip
+          ls -lh out/
+
+      - name: Checksum
+        run: |
+          cd out
+          sha256sum *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crdroid-agent-cepheus
+          path: |
+            out/*.zip
+            out/SHA256SUMS.txt
+          retention-days: 30
+
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" out/*.zip out/SHA256SUMS.txt --clobber || \
+          gh release create "${GITHUB_REF_NAME}" out/*.zip out/SHA256SUMS.txt \
+            --title "Agent Sandbox ${GITHUB_REF_NAME}" \
+            --notes "Built from crDroid 13 base with agent tooling baked in."

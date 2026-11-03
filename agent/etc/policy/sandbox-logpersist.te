@@ -1,0 +1,10 @@
+# xiaomi.eu (Android 11) 的 system_app 域缺少对 logpersistd_logging_prop 的访问权限。
+# 打开"开发者选项"时，SettingsLib 的 AbstractLogpersistPreferenceController
+# 会调用 SystemProperties.set("persist.logd.logpersistd*", ...)，
+# 被 SELinux 拒绝后抛出 RuntimeException，导致设置页直接闪退。
+#
+# 注意：本机 magiskpolicy (Magisk 31.1) 的语句语法不带冒号，
+# 写成 "allow system_app logpersistd_logging_prop:property_service set" 会报 Syntax error。
+
+allow system_app logpersistd_logging_prop property_service set
+allow system_app logpersistd_logging_prop file { read open getattr map }

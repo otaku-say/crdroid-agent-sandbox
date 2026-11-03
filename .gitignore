@@ -1,0 +1,7 @@
+*.zip
+*.img
+out/
+base.zip
+TWRP*.img
+agent/state/wifi.conf
+agent/state/location.conf
