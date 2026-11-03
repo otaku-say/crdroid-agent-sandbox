@@ -104,7 +104,8 @@ log "4/7 卸载并重新打包 system"
 sync
 sudo umount "$MNT"
 python3 "$TOOLS/img2simg.py" system.img system.raw.img 2>/dev/null || img2simg system.img system.raw.img
-python3 "$TOOLS/img2sdat.py" system.raw.img -o . -v 4 >/dev/null
+# img2sdat 依赖同目录的 common/blockimgdiff/sparse_img，必须在 tools 目录内运行
+(cd "$TOOLS" && python3 img2sdat.py "$WORK/base/system.raw.img" -o "$WORK/base" -v 4 >/dev/null)
 # img2sdat 生成 system.new.dat + system.transfer.list；再压缩
 [ -f system.new.dat ] && brotli -q 9 system.new.dat
 ls -lh system.new.dat.br system.transfer.list
